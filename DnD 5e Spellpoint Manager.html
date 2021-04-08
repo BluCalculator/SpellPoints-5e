@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<script>
+		//known issues:
+		//	Arcane Recovery button is disabled onload when it shouldn't be
+		
+			var max;
+			var points;
+			var level;
+			var recovery
+			var hightierused=[false,false,false,false];
+			var mpPerLevel = [4,6,14,17,27,32,38,44,57,64,73,73,83,83,94,94,107,114,123,133];
+			var costPerLevel = [2,3,5,6,7,9,10,11,13];
+			var mp;
+			var cookies=false;
+			function load() {
+				//do stuff
+				level = document.getElementById("level");
+				points = document.getElementById("points");
+				max = document.getElementById("max");
+				recovery = document.getElementById("arcane");
+				
+				if (localStorage.getItem("level")==null) {
+					cookies=confirm("This tool works best with cookies! Would you like a cookie?");
+					mp=0;
+				} else {
+					cookies=true;
+					mp=parseInt(localStorage.getItem("mana"));
+					level.selectedIndex=localStorage.getItem("level");
+					hightierused=localStorage.getItem("hightierused");
+					var blah =localStorage.getItem("recoverydisabled");
+					if (blah==false || blah=="false") recovery.disabled=false;
+					else recovery.disabled=true;
+				}
+				updateLevel();
+			}
+			function save() {
+				if (cookies) {
+					localStorage.setItem("mana",mp);
+					localStorage.setItem("level",level.selectedIndex);
+					localStorage.setItem("recoverydisabled",recovery.disabled);
+					localStorage.setItem("hightierused",hightierused);
+				}
+				console.log("saved "+mp+" mp, lvl "+level.selectedIndex+", recoveryused="+recovery.disabled);
+			}
+			function longrest() {
+				mp=mpPerLevel[level.selectedIndex];
+				points.innerHTML=mp;
+				recovery.disabled=false;
+				updateGUI();
+				save();
+			}
+			function shortrest() {
+				mp+=costPerLevel[spellLevelOf(level.selectedIndex+1)-1];
+				if (mp>mpPerLevel[level.selectedIndex])
+					mp=mpPerLevel[level.selectedIndex];
+				recovery.disabled=true;
+				updateGUI();
+				save();
+			}
+			function spell(lvl) {
+				if (mp-costPerLevel[lvl-1]<0)
+					alert("can't do dat");
+				else {
+					mp-=costPerLevel[lvl-1];
+				}
+				updateGUI();
+				save();
+			}
+			function spellLevelOf(lvl) {
+				var r =0;
+				r=Math.floor((lvl+1)/2);
+				if (r>9) return 9;
+				else return r;
+			}
+			function updateLevel() {
+				max.innerHTML=mpPerLevel[level.selectedIndex];
+				if (mp>mpPerLevel[level.selectedIndex])
+					mp=mpPerLevel[level.selectedIndex];
+				updateGUI();
+				save();
+			}
+			function updateGUI() {
+				points.innerHTML=mp;
+				for (var i=0;i<9;i++) {
+					if (spellLevelOf(level.selectedIndex)<i
+							|| mp-costPerLevel[i]<0
+							|| (i>4&& hightierused[i-5])) {
+						document.getElementById("lvl"+(i+1)).disabled=true;
+					}
+					else
+						document.getElementById("lvl"+(i+1)).disabled=false;
+				}
+			}
+		</script>
+		<title>Kkai's Spell point tool</title>
+	</head>
+	<body onload="load()">
+		<hr />
+		<h1>Spell point counter!</h1>
+		<div>
+			<label>Current level: </label>
+			<select name="level" id="level" onchange="updateLevel()">
+				<option value="1">1st level caster</option>
+				<option value="2">2nd level caster</option>
+				<option value="3">3rd level caster</option>
+				<option value="4">4th level caster</option>
+				<option value="5">5th level caster</option>
+				<option value="6">6th level caster</option>
+				<option value="7">7th level caster</option>
+				<option value="8">8th level caster</option>
+				<option value="9">9th level caster</option>
+				<option value="10">10th level caster</option>
+				<option value="11">11th level caster</option>
+				<option value="12">12th level caster</option>
+				<option value="13">13th level caster</option>
+				<option value="14">14th level caster</option>
+				<option value="15">15th level caster</option>
+				<option value="16">16th level caster</option>
+				<option value="17">17th level caster</option>
+				<option value="18">18th level caster</option>
+				<option value="19">19th level caster</option>
+				<option value="20">20th level caster</option>
+			</select>
+			<hr />
+			Max spellpoints: <b id="max"> blah</b>
+			<br />
+			Current spellpoints: <b id="points">blah</b>
+		</div>
+		<button onclick="longrest()" id="longrest">Long Rest</button>
+		<button onclick="shortrest()" id="arcane" title="One arcane recovery possible per long rest">Arcane Recovery</button>
+		<button onclick="spell(1)" id="lvl1">Level 1 Spell</button>
+		<button onclick="spell(2)" id="lvl2">Level 2 Spell</button>
+		<button onclick="spell(3)" id="lvl3">Level 3 Spell</button>
+		<button onclick="spell(4)" id="lvl4">Level 4 Spell</button>
+		<button onclick="spell(5)" id="lvl5">Level 5 Spell</button>
+		<button onclick="spell(6)" id="lvl6">Level 6 Spell</button>
+		<button onclick="spell(7)" id="lvl7">Level 7 Spell</button>
+		<button onclick="spell(8)" id="lvl8">Level 8 Spell</button>
+		<button onclick="spell(9)" id="lvl9">Level 9 Spell</button>
+		<p>All rights belong to Wizards of the Coast. I have no affiliation or anything i just needed this to work because D&D beyond doesn't support this feature.</p>
+	</body>
+</html>
