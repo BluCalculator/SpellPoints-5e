@@ -26,7 +26,7 @@
 					cookies=true;
 					mp=parseInt(localStorage.getItem("mana"));
 					level.selectedIndex=localStorage.getItem("level");
-					hightierused=localStorage.getItem("hightierused");
+					hightierused=JSON.parse(localStorage.getItem("hightierused"));
 					var blah =localStorage.getItem("recoverydisabled");
 					if (blah==false || blah=="false") recovery.disabled=false;
 					else recovery.disabled=true;
@@ -38,7 +38,7 @@
 					localStorage.setItem("mana",mp);
 					localStorage.setItem("level",level.selectedIndex);
 					localStorage.setItem("recoverydisabled",recovery.disabled);
-					localStorage.setItem("hightierused",hightierused);
+					localStorage.setItem("hightierused","["+hightierused+"]");
 				}
 				console.log("saved "+mp+" mp, lvl "+level.selectedIndex+", recoveryused="+recovery.disabled);
 			}
@@ -46,6 +46,7 @@
 				mp=mpPerLevel[level.selectedIndex];
 				points.innerHTML=mp;
 				recovery.disabled=false;
+				hightierused=[false,false,false,false];
 				updateGUI();
 				save();
 			}
@@ -62,6 +63,7 @@
 					alert("can't do dat");
 				else {
 					mp-=costPerLevel[lvl-1];
+					if (lvl>5) hightierused[lvl-6]=true;
 				}
 				updateGUI();
 				save();
@@ -84,7 +86,7 @@
 				for (var i=0;i<9;i++) {
 					if (spellLevelOf(level.selectedIndex)<i
 							|| mp-costPerLevel[i]<0
-							|| (i>4&& hightierused[i-5])) {
+							|| (i>4 && hightierused[i-5])) {
 						document.getElementById("lvl"+(i+1)).disabled=true;
 					}
 					else
