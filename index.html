@@ -2,106 +2,50 @@
 <html>
 	<head>
 		<meta charset="utf-8" />
-		<script>
-			var max;
-			var points;
-			var level;
-			var recovery
-			var hightierused=[false,false,false,false];
-			var mpPerLevel = [4,6,14,17,27,32,38,44,57,64,73,73,83,83,94,94,107,114,123,133];
-			var costPerLevel = [2,3,5,6,7,9,10,11,13];
-			var mp;
-			var cookies=false;
-			function load() {
-				//do stuff
-				level = document.getElementById("level");
-				points = document.getElementById("points");
-				max = document.getElementById("max");
-				recovery = document.getElementById("arcane");
-				
-				if (localStorage.getItem("level")==null) {
-					cookies=confirm("This tool works best with cookies! Would you like a cookie?");
-					mp=0;
-				} else {
-					cookies=true;
-					mp=parseInt(localStorage.getItem("mana"));
-					level.selectedIndex=localStorage.getItem("level");
-					hightierused=JSON.parse(localStorage.getItem("hightierused"));
-					var blah =localStorage.getItem("recoverydisabled");
-					if (blah==false || blah=="false") recovery.disabled=false;
-					else recovery.disabled=true;
-				}
-				updateLevel();
+		<style>
+			.colourblind {
 			}
-			function save() {
-				if (cookies) {
-					localStorage.setItem("mana",mp);
-					localStorage.setItem("level",level.selectedIndex);
-					localStorage.setItem("recoverydisabled",recovery.disabled);
-					localStorage.setItem("hightierused","["+hightierused+"]");
-				}
-				console.log("saved "+mp+" mp, lvl "+level.selectedIndex+", recoveryused="+recovery.disabled);
+			.nonSRD {
+				display:none;
 			}
-			function longrest() {
-				mp=mpPerLevel[level.selectedIndex];
-				points.innerHTML=mp;
-				recovery.disabled=false;
-				hightierused=[false,false,false,false];
-				updateGUI();
-				save();
+			.arcanerecovery {
+				display:none;
+				position:fixed;
+				top:0;
+				left:0;
+				background-color:white;
+				width:100%;
+				height:100%;
+				padding:40px;
 			}
-			function shortrest() {
-				mp+=costPerLevel[spellLevelOf(level.selectedIndex+1)-1];
-				if (mp>mpPerLevel[level.selectedIndex])
-					mp=mpPerLevel[level.selectedIndex];
-				recovery.disabled=true;
-				updateGUI();
-				save();
-			}
-			function spell(lvl) {
-				if (mp-costPerLevel[lvl-1]<0)
-					alert("can't do dat");
-				else {
-					mp-=costPerLevel[lvl-1];
-					if (lvl>5) hightierused[lvl-6]=true;
-				}
-				updateGUI();
-				save();
-			}
-			function spellLevelOf(lvl) {
-				var r =0;
-				r=Math.floor((lvl+1)/2);
-				if (r>9) return 9;
-				else return r;
-			}
-			function updateLevel() {
-				max.innerHTML=mpPerLevel[level.selectedIndex];
-				if (mp>mpPerLevel[level.selectedIndex])
-					mp=mpPerLevel[level.selectedIndex];
-				updateGUI();
-				save();
-			}
-			function updateGUI() {
-				points.innerHTML=mp;
-				for (var i=0;i<9;i++) {
-					if (spellLevelOf(level.selectedIndex)<i
-							|| mp-costPerLevel[i]<0
-							|| (i>4 && hightierused[i-5])) {
-						document.getElementById("lvl"+(i+1)).disabled=true;
-					}
-					else
-						document.getElementById("lvl"+(i+1)).disabled=false;
-				}
-			}
-		</script>
+		</style>
+		<script src="spellsjson.js"></script>
+		<script src="spellpoint.js"></script>
 		<title>Kkai's Spell point tool</title>
 	</head>
 	<body onload="load()">
-		<hr />
+		<hr>
 		<h1>Spell point counter!</h1>
 		<div>
+			<label style="display:none">Main Class: </label>
+			<select style="display:none" name="profession" id="profession" onchange="updateClass();">
+				<option value="bard">Bard</option>
+				<option value="cleric">Cleric</option>
+				<option value="druid">Druid</option>
+				<option value="fighter_ek" class="nonSRD">Fighter - Eldritch Knight</option>
+				<option value="paladin">Paladin</option>
+				<option value="ranger">Ranger</option>
+				<option value="rogue_at" class="nonSRD">Rogue - Arcane Trickster</option>
+				<option value="sorceror">Sorceror</option>
+				<option value="wizard">Wizard</option>
+				<option value="default" selected>---</option>
+				<option value="fullcaster">Generic Full Caster</option>
+				<option value="halfcaster">Generic Half Caster</option>
+				<option value="thirdcaster">Generic Subclass Caster</option>
+			</select>
+			<br/>
 			<label>Current level: </label>
-			<select name="level" id="level" onchange="updateLevel()">
+			<select name="primarylevel" id="primarylevel" onchange="updateLevel();">
 				<option value="1">1st level caster</option>
 				<option value="2">2nd level caster</option>
 				<option value="3">3rd level caster</option>
@@ -123,22 +67,169 @@
 				<option value="19">19th level caster</option>
 				<option value="20">20th level caster</option>
 			</select>
-			<hr />
+			<br>
+			<button onclick="settings.toggle_settings_visible()">Settings</button>
+			<div id="settings" style="border: 1px solid black">
+				<button id="colourblind_mode_button" onclick="settings.toggle_colorblind()">Colourblind mode</button>
+				<b id="colourblind_mode" class="colourblind">dfgh</b>
+				<br>
+				<button id="spellbook_setting_button" onclick="settings.toggle_spellbook()">Use Spellbook</button>
+				<b id="spellbook_setting" class="colourblind">sdfg</b>
+				<br>
+				<button onclick="settings.toggle_homebrew_visible()">Homebrew</button>
+				<div id="homebrew" style="border: 1px solid black">
+					<button id="arcane_recovery_points_button" onclick="settings.toggle_recover_points()">Arcane Recovery uses points instead of slots</button>
+					<b id="arcane_recovery_points" class="colourblind">asdf</b>
+					<br>
+					<button id="free_high_levels_button" onclick="settings.toggle_free_high_levels()">Disable high-level slot limit</button>
+					<b id="free_high_levels" class="colourblind">asdf</b>
+				</div>
+			</div>
+			<hr>
 			Max spellpoints: <b id="max"> blah</b>
-			<br />
+			<br>
 			Current spellpoints: <b id="points">blah</b>
 		</div>
 		<button onclick="longrest()" id="longrest">Long Rest</button>
 		<button onclick="shortrest()" id="arcane" title="One arcane recovery possible per long rest">Arcane Recovery</button>
-		<button onclick="spell(1)" id="lvl1">Level 1 Spell</button>
-		<button onclick="spell(2)" id="lvl2">Level 2 Spell</button>
-		<button onclick="spell(3)" id="lvl3">Level 3 Spell</button>
-		<button onclick="spell(4)" id="lvl4">Level 4 Spell</button>
-		<button onclick="spell(5)" id="lvl5">Level 5 Spell</button>
-		<button onclick="spell(6)" id="lvl6">Level 6 Spell</button>
-		<button onclick="spell(7)" id="lvl7">Level 7 Spell</button>
-		<button onclick="spell(8)" id="lvl8">Level 8 Spell</button>
-		<button onclick="spell(9)" id="lvl9">Level 9 Spell</button>
+		<div id="recovermenu" class="arcanerecovery">
+			<div style="border: 1px solid black;width:400px;height:400px;">
+				<b>
+					Which slots would you like to refill?
+					<br> You have <span id="recover_levels">dsjflk</span>
+				</b><hr>
+				<div id="spent">,uufy,</div>
+				<hr>
+				<div id="tentatively_recovered">m,.45324</div>
+				&nbsp;<button onclick="closerecovery(0)"> Finish Arcane Recovery</button> <button onclick="closerecovery(1)">Cancel</button>
+			</div>
+		</div>
+		
+		<div id="recovered"></div>
+		<div id="slots1"><button onclick="spell(1)">Generic Level 1 Spell</button></div>
+		<div id="slots2"><button onclick="spell(2)">Generic Level 2 Spell</button></div>
+		<div id="slots3"><button onclick="spell(3)">Generic Level 3 Spell</button></div>
+		<div id="slots4"><button onclick="spell(4)">Generic Level 4 Spell</button></div>
+		<div id="slots5"><button onclick="spell(5)">Generic Level 5 Spell</button></div>
+		<div id="slots6"><button onclick="spell(6)">Generic Level 6 Spell</button></div>
+		<div id="slots7"><button onclick="spell(7)">Generic Level 7 Spell</button></div>
+		<div id="slots8"><button onclick="spell(8)">Generic Level 8 Spell</button></div>
+		<div id="slots9"><button onclick="spell(9)">Generic Level 9 Spell</button></div>
+		<br>
+		<button onclick="reset()" style="background-color:#FF0000;color:#FFFFFF">Reset</button>
+		<div id="OGL">
+<P>THIS LICENSE IS APPROVED FOR GENERAL USE.  PERMISSION TO DISTRIBUTE THIS LICENSE
+IS MADE BY WIZARDS OF THE COAST!</P>
+
+<P>OPEN GAME LICENSE Version  1.0a</P>
+
+<P>The following text is the property of Wizards of the Coast, Inc. and is
+Copyright 2000 Wizards of the Coast, Inc ("Wizards"). All Rights Reserved.</P>
+
+<P>1. Definitions: (a)"Contributors" means the copyright and/or trademark
+owners who have contributed Open Game Content; (b)"Derivative Material"
+means copyrighted material including derivative works and translations
+(including into other computer languages), potation, modification,
+correction, addition, extension, upgrade, improvement, compilation,
+abridgment or other form in which an existing work may be recast,
+transformed or adapted;  (c) "Distribute" means to reproduce, license, rent,
+lease, sell, broadcast, publicly display, transmit or otherwise distribute;
+(d)"Open Game Content" means the game mechanic and includes the methods,
+procedures, processes and routines to the extent such content does not
+embody the Product Identity and is an enhancement over the prior art and any
+additional content clearly identified as Open Game Content by the
+Contributor,  and means any work covered by this License, including
+translations and derivative works under copyright law, but specifically
+excludes Product Identity. (e) "Product Identity" means product and product
+line names, logos and identifying marks including trade dress; artifacts;
+creatures characters; stories, storylines, plots, thematic elements,
+dialogue, incidents, language, artwork, symbols, designs, depictions,
+likenesses, formats, poses, concepts, themes and graphic, photographic and
+other visual or audio representations; names and descriptions of characters,
+spells, enchantments, personalities, teams, personas, likenesses and special
+abilities; places, locations, environments, creatures, equipment, magical or
+supernatural abilities or effects, logos, symbols, or graphic designs; and
+any other trademark or registered trademark clearly identified as Product
+identity by the owner of the Product Identity, and which specifically
+excludes the Open Game Content; (f) "Trademark" means the logos, names,
+mark, sign, motto, designs that are used by a Contributor to identify itself
+or its products or the associated products contributed to the Open Game
+License by the Contributor (g) "Use", "Used" or "Using" means to use,
+Distribute, copy, edit, format, modify, translate and otherwise create
+Derivative Material of Open Game Content. (h) "You" or "Your" means the
+licensee in terms of this agreement.</P>
+
+<P>2. The License:  This License applies to any Open Game Content that contains
+a notice indicating that the Open Game Content may only be Used under and in
+terms of this License. You must affix such a notice to any Open Game Content
+that you Use. No terms may be added to or subtracted from this License
+except as described by the License itself. No other terms or conditions may
+be applied to any Open Game Content distributed using this License.</P>
+
+<P>3.Offer and Acceptance: By Using the Open Game Content You indicate Your
+acceptance of the terms of this License.</P>
+
+<P>4. Grant and Consideration: In consideration for agreeing to use this
+License, the Contributors grant You a perpetual, worldwide, royalty-free,
+non-exclusive license with the exact terms of this License to Use, the Open
+Game Content.</P>
+
+<P>5.Representation of Authority to Contribute: If You are contributing
+original material as Open Game Content, You represent that Your
+Contributions are Your original creation and/or You have sufficient rights
+to grant the rights conveyed by this License.</P>
+
+<P>6.Notice of License Copyright: You must update the COPYRIGHT NOTICE portion
+of this License to include the exact text of the COPYRIGHT NOTICE of any
+Open Game Content You are copying, modifying or distributing, and You must
+add the title, the copyright date, and the copyright holder's name to the
+COPYRIGHT NOTICE of any original Open Game Content you Distribute.</P>
+
+<P>7. Use of Product Identity:  You agree not to Use any Product Identity,
+including as an indication as to compatibility, except as expressly licensed
+in another, independent Agreement with the owner of each element of that
+Product Identity.  You agree not to indicate compatibility or
+co-adaptability with any Trademark or Registered Trademark in conjunction with a work containing
+Open Game Content except as expressly licensed in another, independent
+Agreement with the owner of such Trademark or Registered Trademark. The use of any Product Identity
+in Open Game Content does not constitute a challenge to the ownership of
+that Product Identity.  The owner of any Product Identity used in Open Game
+Content shall retain all rights, title and interest in and to that Product
+Identity.</P>
+
+<P>8. Identification: If you distribute Open Game Content You must clearly
+indicate which portions of the work that you are distributing are Open Game
+Content.</P>
+
+<P>9. Updating the License:  Wizards or its designated Agents may publish
+updated versions of this License.  You may use any authorized version of
+this License to copy, modify and distribute any Open Game Content originally
+distributed under any version of this License.</P>
+
+<P>10 Copy of this License:  You MUST include a copy of this License with every
+copy of the Open Game Content You Distribute.</P>
+
+<P>11. Use of Contributor Credits: You may not market or advertise the Open
+Game Content using the name of any Contributor unless You have written
+permission from the Contributor to do so.</P>
+
+<P>12 Inability to Comply: If it is impossible for You to comply with any of
+the terms of this License with respect to some or all of the Open Game
+Content due to statute, judicial order, or governmental regulation then You
+may not Use any Open Game Material so affected.</P>
+
+<P>13 Termination: This License will terminate automatically if You fail to
+comply with all terms herein and fail to cure such breach within 30 days of
+becoming aware of the breach. All sublicenses shall survive the termination
+of this License.</P>
+
+<P>14 Reformation: If any provision of this License is held to be
+unenforceable, such provision shall be reformed only to the extent necessary
+to make it enforceable.</P>
+
+<P>15 COPYRIGHT NOTICE<br>
+Open Game License v 1.0 Copyright 2000, Wizards of the Coast, Inc.</P>
+		</div>
 		<p>All rights belong to Wizards of the Coast. I have no affiliation or anything i just needed this to work because D&D beyond doesn't support this feature.</p>
 	</body>
 </html>
