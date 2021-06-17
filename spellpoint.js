@@ -40,12 +40,13 @@ function load() {
 		mp=0;
 	} else {
 		cookies=true;
-		mp=parseInt(localStorage.getItem("mana"));
-		level.selectedIndex=localStorage.getItem("primarylevel");
+		mp=JSON.parse(localStorage.getItem("mana"));
+		level.selectedIndex=JSON.parse(localStorage.getItem("primarylevel"));
+		recovery.disabled=JSON.parse(localStorage.getItem("recoverydisabled"));
 		hightierused=JSON.parse(localStorage.getItem("hightierused"));
+		
 		spent=JSON.parse(localStorage.getItem("spent"));
 		recovered=JSON.parse(localStorage.getItem("recovered"));
-		recovery.disable=JSON.parse(localStorage.getItem("recoverydisabled"));
 		
 		settings.recover_points=JSON.parse(localStorage.getItem("recover_points"));
 		settings.spellbook=JSON.parse(localStorage.getItem("spellbook"));
@@ -76,12 +77,14 @@ function load() {
 }
 function save() {
 	if (cookies) {
-		localStorage.setItem("mana",mp);
-		localStorage.setItem("primarylevel", level.selectedIndex);
-		localStorage.setItem("recoverydisabled", recovery.disabled);
+		localStorage.setItem("mana",JSON.stringify(mp));
+		localStorage.setItem("primarylevel", JSON.stringify(level.selectedIndex));
+		localStorage.setItem("recoverydisabled", JSON.stringify(recovery.disabled));
 		localStorage.setItem("hightierused", JSON.stringify(hightierused));
+		
 		localStorage.setItem("spent", JSON.stringify(spent));
 		localStorage.setItem("recovered", JSON.stringify(recovered));
+		
 		localStorage.setItem("recover_points", JSON.stringify(settings.recover_points));
 		localStorage.setItem("spellbook", JSON.stringify(settings.spellbook));
 		localStorage.setItem("free_high_levels", JSON.stringify(settings.free_high_levels));
