@@ -26,8 +26,8 @@ var mp;
 var cookies = false;
 var spent = [];
 var recovered = [];
-var tentatively_recovered = [];
 var recover_levels;
+
 function load() {
 	level = document.getElementById("primarylevel");
 	points = document.getElementById("points");
@@ -46,6 +46,9 @@ function load() {
 		hightierused=JSON.parse(localStorage.getItem("hightierused"));
 		
 		spent=JSON.parse(localStorage.getItem("spent"));
+		for (let i=0;i<spent.length;i++) {
+			spent[i].recovering=false;
+		}
 		recovered=JSON.parse(localStorage.getItem("recovered"));
 		
 		settings.recover_points=JSON.parse(localStorage.getItem("recover_points"));
@@ -54,7 +57,9 @@ function load() {
 		settings.colorblind=JSON.parse(localStorage.getItem("colorblind"));
 		
 	}
-	/*for (let i=0;i<spells.length;i++){
+	
+	/*
+	for (let i=0;i<spells.length;i++){
 		if (spells[i].level!="cantrip") {
 			let section=document.getElementById("slots"+spells[i].level).innerHTML;
 			document.getElementById("slots"+spells[i].level).innerHTML =				section
@@ -64,10 +69,11 @@ function load() {
 		}
 	}*/
 	
-	let buttons="";
+	buttons="";
 	for (let i=0;i<spent.length;i++) {
-		let lvl=spent[i];
-		buttons+="<button onclick=\"recover("+i+")\" id=\"spent"+i+"\" data-lvl=\""+lvl+"\">Generic Level "+lvl+" Spell</button>"
+		
+		buttons+=buttonSpent(i);
+		
 	}
 	document.getElementById("spent").innerHTML=buttons;
 	
@@ -106,8 +112,6 @@ function longrest() {
 	document.getElementById("spent").innerHTML="";
 	recovered=[];
 	document.getElementById("recovered").innerHTML="";
-	tentatively_recovered=[];
-	document.getElementById("tentatively_recovered").innerHTML="";
 	updateGUI();
 	save();
 }
@@ -119,40 +123,60 @@ function shortrest() {
 		}
 		recovery.disabled=true;
 	} else {
-		recover_levels=level.selectedIndex+1;
+		recover_levels=Math.ceil((level.selectedIndex+1)/2);
 		tentatively_recovered=[];
 		document.styleSheets[0].rules[2].style.display="block";
+		
 	}
 	updateGUI();
 	save();
 }
 function recover(id) {
-	let button=document.getElementById("spent"+id);
-	let level=parseInt(button.getAttribute("data-lvl"));
-	if (recover_levels>=level) {
+	let level=spent[id].level;
+	let buttons=document.getElementById("spent").children;
+	if (spent[id].recovering) {
+		recover_levels+=level;
+		buttons[id].className="";
+		spent[id].recovering=false;
+	} else {
 		recover_levels-=level;
-		tentatively_recovered.push(level);
+		buttons[id].className="recovered";
+		spent[id].recovering=true;
 		console.log("recovering from button "+id);
-		button.disabled=true;
-		let buttons=document.getElementById("spent").children;
-		for (let i=0;i<buttons.length;i++) {
-			if (parseInt(buttons[i].getAttribute("data-lvl")) > recover_levels) {
-				buttons[i].disabled=true;
-			}
+	}
+	for (let i=0;i<spent.length;i++) {
+		if (!spent[i].recovering && spent[i].level > recover_levels) {
+			buttons[i].disabled=true;
+		} else {
+			buttons[i].disabled=false;
 		}
 	}
 	updateGUI();
 	save();
+}
+function unrecover(id) {
+	for (let i=0;i<tentatively_recovered.length;i++) {
+		
+	}
 }
 function closerecovery(exitcode) {
 	document.styleSheets[0].rules[2].style.display="none";
 	
 	if (exitcode==0) {
 		document.getElementById("arcane").disabled=true;
-		recovered=tentatively_recovered;
+		for (let i=0;i<spent.length;i++) {
+			if (spent[i].recovering) recovered.push(spent[i].level);
+		}
 	} else {
-		//todo work out if there's anything that belongs here
+		let dead=document.getElementById("spent").children;
+		for (let i=0;i<dead.length;i++) {
+			dead[i].disabled=false;
+		}
+		for (let i=0;i<spent.length;i++) {
+			spent[i].recovering=false;
+		}
 	}
+	recovered.sort();
 	updateGUI();
 	save();
 }
@@ -166,26 +190,23 @@ function spell(lvl) {
 	else {
 		mp-=costPerLevel[arraylvl];
 		if (lvl>5) hightierused[lvl-6]=true;
-		document.getElementById("spent").innerHTML+=
-			   "<button"
-				+" onclick=\"recover("+spent.length+")\""
-				+" id=\"spent"+spent.length+"\""
-				+" data-lvl=\""+lvl+"\">"
-				+"Generic Level "+lvl+" Spell"
-				+"</button>";
-			  /*<button onclick="recover(0)" id="spent0" data-lvl="3">
-					Generic Level 3 Spell
-				</button>;*/
-		spent.push(lvl);
+		spent.push({level:lvl,recovering:false});
+		document.getElementById("spent").innerHTML+=buttonSpent(spent.length-1);
 	}
 	updateGUI();
 	save();
 }
 function spellLevelOf(lvl) {
-	let r = 0;
-	r = Math.floor((lvl+1)/2);
+	let r = Math.floor((lvl+1)/2);
 	if (r>9) return 9;
 	else return r;
+}
+function buttonSpent(id) {
+	return "<button onclick=\"recover("+id+")\">Level "+spent[id].level+" Slot</button>";
+}
+function e(x) {
+	console.log(x);
+	return x;
 }
 function updateClass() {
 	let p = profession.item(profession.selectedIndex).text;
@@ -242,12 +263,18 @@ function updateGUI() {
 	
 	points.innerHTML=mp;
 	for (let i=0;i<9;i++) {
-		if (spellLevelOf(level.selectedIndex)<i
-				|| mp-costPerLevel[i]<0
+		let spellLvl=spellLevelOf(level.selectedIndex+1);
+		console.log("i="+i);
+		if (spellLvl<=i//level is too high for character
+				|| (mp-costPerLevel[i]<0//not enough spellpoints
+						&& recovered.indexOf(i+1)==-1//no recovered spell slot
+						)
 				|| (!settings.free_high_levels//homebrew rule: do we care about one-use-per-day
-						&& i>4//6th levl spell or higher
-						&& hightierused[i-5]))//spell hasn't been used yet
-						{
+						&& i>4//6th level spell or higher
+						&& hightierused[i-5]//already used a high level spell slot of this level
+						)
+			)//spell can't be used
+		{
 			list=document.getElementById("slots"+(i+1)).children;
 			for (let j=0;j<list.length;j++) {
 				list[j].disabled=true;
@@ -264,16 +291,10 @@ function updateGUI() {
 	let buttons="";
 	for (let i=0;i<recovered.length;i++) {
 		let lvl=recovered[i];
-		buttons+="<button disabled=\"true\" style=\"background-color:#00DD00;color:#FFFFFF\">Arcane Recovery regained Level "+lvl+" Spellslot</button>"
+		buttons+="<button disabled=\"true\" class=\"recovered\">Arcane Recovery regained Level "+lvl+" Spellslot</button>"
 	}
 	document.getElementById("recovered").innerHTML=buttons;
 	
-	buttons="";
-	for (let i=0;i<tentatively_recovered.length;i++) {
-		let lvl=tentatively_recovered[i];
-		buttons+="<button disabled=\"true\" style=\"background-color:#00DD00;color:#FFFFFF\">Arcane Recovery regained Level "+lvl+" Spellslot</button>"
-	}
-	document.getElementById("tentatively_recovered").innerHTML=buttons;
 	document.getElementById("recover_levels").innerHTML=recover_levels;
 	
 }
