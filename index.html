@@ -18,6 +18,10 @@
 				height:100%;
 				padding:40px;
 			}
+			.recovered {
+				background-color:#00DD00;
+				color:#FFFFFF;
+			}
 		</style>
 		<script src="spellsjson.js"></script>
 		<script src="spellpoint.js"></script>
@@ -78,7 +82,7 @@
 				<br>
 				<button onclick="settings.toggle_homebrew_visible()">Homebrew</button>
 				<div id="homebrew" style="border: 1px solid black">
-					<button id="arcane_recovery_points_button" onclick="settings.toggle_recover_points()">Arcane Recovery uses points instead of slots</button>
+					<button id="arcane_recovery_points_button" onclick="settings.toggle_recover_points()">Arcane Recovery gives points instead of slots</button>
 					<b id="arcane_recovery_points" class="colourblind">asdf</b>
 					<br>
 					<button id="free_high_levels_button" onclick="settings.toggle_free_high_levels()">Disable high-level slot limit</button>
@@ -100,8 +104,7 @@
 				</b><hr>
 				<div id="spent">,uufy,</div>
 				<hr>
-				<div id="tentatively_recovered">m,.45324</div>
-				&nbsp;<button onclick="closerecovery(0)"> Finish Arcane Recovery</button> <button onclick="closerecovery(1)">Cancel</button>
+				&nbsp;<button onclick="closerecovery(0)">Finish Arcane Recovery</button> <button onclick="closerecovery(1)">Cancel</button>
 			</div>
 		</div>
 		
@@ -117,7 +120,6 @@
 		<div id="slots9"><button onclick="spell(9)">Generic Level 9 Spell</button></div>
 		<br>
 		<button onclick="reset()" style="background-color:#FF0000;color:#FFFFFF">Reset</button>
-		
-		<p>Rights to the concept of spellpolints belong to Wizards of the Coast</p>
+		<p style="font-style:italic">Rights to the Spellpoints concept belong to Wizards of the Coast. Aside from the homebrew variants I did not invent the rules or concepts that govern spellpoints, nor any of the spells included, not even the spellbook functionality I haven't yet implemented but intend to. I only encoded them into javascript. I have no affiliation or anything i just needed this to work because D&D beyond doesn't support this feature.</p>
 	</body>
 </html>
